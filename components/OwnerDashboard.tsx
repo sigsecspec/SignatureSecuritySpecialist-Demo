@@ -1,19 +1,12 @@
+
 import React from 'react';
-import type { Stat } from '../types';
-
-const ownerStats: Stat[] = [
-    { value: "1,258", label: "Total Users" },
-    { value: "75", label: "Active Missions" },
-    { value: "32", label: "Pending Approvals" },
-    { value: "$12,450", label: "Revenue (Month)" },
-];
-
-const mockUsers = [
-    { id: 1, name: 'Demo Guard', role: 'Guard', status: 'Active' },
-    { id: 2, name: 'Demo Client', role: 'Client', status: 'Active' },
-    { id: 3, name: 'New Applicant', role: 'Guard', status: 'Pending' },
-    { id: 4, name: 'James Lyons', role: 'Operations Director', status: 'Active' },
-];
+import type { Stat, User } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
+import { useMissions } from '../context/MissionContext';
+import { MissionStatus } from '../types';
+import PromotionReview from './PromotionReview';
+import TrainingApproval from './TrainingApproval';
 
 const StatCard: React.FC<{ stat: Stat }> = ({ stat }) => (
     <div className="bg-gray-50 p-6 rounded-lg shadow-sm border">
@@ -23,6 +16,18 @@ const StatCard: React.FC<{ stat: Stat }> = ({ stat }) => (
 );
 
 const OwnerDashboard: React.FC = () => {
+    const { users, approveUser } = useAuth();
+    const { missions } = useMissions();
+    const activeMissions = missions.filter(m => m.status !== MissionStatus.Completed).length;
+    const revenue = 0; // Mock data removed
+    
+    const ownerStats: Stat[] = [
+        { value: users.length.toString(), label: "Total Users" },
+        { value: activeMissions.toString(), label: "Active Missions" },
+        { value: users.filter(u => u.status === 'Pending').length.toString(), label: "Pending Approvals" },
+        { value: `$${revenue.toLocaleString()}`, label: "Revenue (Month)" },
+    ];
+
     return (
         <div className="border-t pt-8 space-y-8">
             <div>
@@ -31,6 +36,16 @@ const OwnerDashboard: React.FC = () => {
                     {ownerStats.map(stat => <StatCard key={stat.label} stat={stat} />)}
                 </div>
             </div>
+             <div>
+                <h2 className="text-2xl font-bold text-sss-ebony mb-4">Quick Actions</h2>
+                <Link to="/create-user" className="inline-block bg-sss-sage text-white font-bold py-2 px-6 rounded-lg hover:bg-opacity-80 transition-transform transform hover:scale-105 duration-300 shadow-md">
+                    Create New User
+                </Link>
+            </div>
+            
+            <PromotionReview />
+
+            <TrainingApproval />
 
             <div>
                 <h2 className="text-2xl font-bold text-sss-ebony mb-4">User Management</h2>
@@ -45,19 +60,23 @@ const OwnerDashboard: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {mockUsers.map(user => (
-                                <tr key={user.id}>
+                            {users.map(user => (
+                                <tr key={user.email}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-sss-ebony">{user.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-sss-grey">{user.role}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-sss-grey">{user.title}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
                                             {user.status}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <a href="#" className="text-sss-sage hover:text-opacity-80">
-                                            {user.status === 'Pending' ? 'Review' : 'Manage'}
-                                        </a>
+                                        {user.status === 'Pending' ? (
+                                             <button onClick={() => approveUser(user.email)} className="text-sss-sage hover:text-opacity-80">
+                                                Approve
+                                             </button>
+                                        ) : (
+                                            <Link to={`/profile/${encodeURIComponent(user.email)}`} className="text-sss-grey hover:text-opacity-80">Manage</Link>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

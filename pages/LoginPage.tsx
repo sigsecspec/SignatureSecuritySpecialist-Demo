@@ -8,44 +8,50 @@ const LoginPage: React.FC = () => {
   const { users, login } = useAuth();
 
   const handleLogin = (user: User) => {
-    login(user);
-    navigate('/dashboard');
+    if (login(user)) {
+      navigate('/dashboard');
+    }
   };
 
   const groupUsers = () => {
     const groups: { [key: string]: User[] } = {
-        'New Accounts': [],
+        'Pending Applicants': [],
         'Owner': [],
+        'Management': [],
         'Operations': [],
         'Field Team': [],
         'Clients': [],
     };
-
-    const predefinedEmails = new Set(users.filter(u => u.email.includes('@SignatureSecuritySpecialist.com') || u.email.includes('@sigsecspec.com')).map(u => u.email));
-
+    
     users.forEach(user => {
-        if (!predefinedEmails.has(user.email)) {
-            groups['New Accounts'].push(user);
+        if (user.status === 'Pending') {
+            groups['Pending Applicants'].push(user);
             return;
         }
 
         switch(user.role) {
             case UserRole.Owner:
+            case UserRole.CoOwner:
                 groups['Owner'].push(user);
+                break;
+            case UserRole.Secretary:
+            case UserRole.Dispatch:
+                groups['Management'].push(user);
                 break;
             case UserRole.OperationsDirector:
             case UserRole.OperationsManager:
                 groups['Operations'].push(user);
                 break;
-            case UserRole.Guard:
             case UserRole.Supervisor:
+            case UserRole.TrainingOfficer:
+            case UserRole.LeadGuard:
+            case UserRole.Guard:
                 groups['Field Team'].push(user);
                 break;
             case UserRole.Client:
                 groups['Clients'].push(user);
                 break;
             default:
-                // Fallback for any other predefined roles; safer not to group them wrongly.
                 break;
         }
     });
@@ -53,8 +59,7 @@ const LoginPage: React.FC = () => {
   }
   
   const userGroups = groupUsers();
-  // Define an explicit order for rendering groups to ensure "New Accounts" is always at the top for demos.
-  const groupOrder = ['New Accounts', 'Owner', 'Operations', 'Field Team', 'Clients'];
+  const groupOrder = ['Owner', 'Management', 'Operations', 'Field Team', 'Clients', 'Pending Applicants'];
 
   return (
     <div className="min-h-[60vh] bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -74,11 +79,13 @@ const LoginPage: React.FC = () => {
                       <button
                         key={user.email}
                         onClick={() => handleLogin(user)}
-                        className="text-left p-4 bg-white rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sss-sage"
+                        className="text-left p-4 bg-white rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sss-sage disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:-translate-y-0"
+                        disabled={user.status === 'Pending'}
                       >
                         <p className="font-bold text-sss-ebony text-lg">{user.name}</p>
                         <p className="text-sm text-sss-sage font-semibold">{user.title}</p>
                         <p className="text-xs text-sss-grey truncate mt-1">{user.email}</p>
+                        {user.status === 'Pending' && <span className="text-xs text-blue-600 font-bold">Pending Approval</span>}
                       </button>
                     ))}
                   </div>

@@ -1,63 +1,85 @@
+
 import { User, UserRole } from '../types';
 
 export const users: User[] = [
-  // Provided Staff Accounts
+  // ===================
+  // ------ Owner ------
+  // ===================
   {
     name: 'Markeith White',
     email: 'M.White@SignatureSecuritySpecialist.com',
     password: 'password123',
     role: UserRole.Owner,
-    title: 'Owner'
+    title: 'Owner',
+    rank: 'CHF (Chief)',
+    status: 'Active',
+    trainings: [],
+    pendingTrainings: [],
+    uniformStatus: 'Received',
+    assignedMissions: [],
   },
+
+  // ===============================
+  // ------ Team 1 Operations ------
+  // ===============================
   {
     name: 'James Lyons',
     email: 'J.Lyons@SignatureSecuritySpecialist.com',
     password: 'password123',
     role: UserRole.OperationsDirector,
-    title: 'Operations Director'
+    title: 'Operations Director',
+    rank: 'CAP (Captain)',
+    status: 'Active',
+    teamId: 1,
+    trainings: [],
+    pendingTrainings: [],
+    uniformStatus: 'Received',
+    assignedMissions: [],
   },
   {
     name: 'Tommy Moreno',
     email: 'T.Moreno@SignatureSecuritySpecialist.com',
     password: 'password123',
-    role: UserRole.OperationsDirector,
-    title: 'Operations Director'
+    role: UserRole.OperationsManager,
+    title: 'Operations Manager',
+    rank: 'LT (Lieutenant)',
+    status: 'Active',
+    teamId: 1,
+    trainings: [],
+    pendingTrainings: [],
+    uniformStatus: 'Received',
+    assignedMissions: [],
   },
+
+  // ===============================
+  // ------ Team 2 Operations ------
+  // ===============================
   {
     name: 'Brandon Baker',
     email: 'B.Baker@SignatureSecuritySpecialist.com',
     password: 'password123',
     role: UserRole.OperationsDirector,
-    title: 'Operations Director'
+    title: 'Operations Director',
+    rank: 'CAP (Captain)',
+    status: 'Active',
+    teamId: 2,
+    trainings: [],
+    pendingTrainings: [],
+    uniformStatus: 'Received',
+    assignedMissions: [],
   },
   {
     name: 'Ronald Granum',
     email: 'R.Granum@SignatureSecuritySpecialist.com',
     password: 'password123',
     role: UserRole.OperationsManager,
-    title: 'Operations Manager'
-  },
-
-  // Generic Demo Accounts for other roles
-  {
-    name: 'Demo Guard',
-    email: 'guard@sigsecspec.com',
-    password: 'password123',
-    role: UserRole.Guard,
-    title: 'Security Officer'
-  },
-  {
-    name: 'Demo Client',
-    email: 'client@sigsecspec.com',
-    password: 'password123',
-    role: UserRole.Client,
-    title: 'Client Contact'
-  },
-  {
-    name: 'Demo Supervisor',
-    email: 'supervisor@sigsecspec.com',
-    password: 'password123',
-    role: UserRole.Supervisor,
-    title: 'Field Supervisor'
+    title: 'Operations Manager',
+    rank: 'LT (Lieutenant)',
+    status: 'Active',
+    teamId: 2,
+    trainings: [],
+    pendingTrainings: [],
+    uniformStatus: 'Received',
+    assignedMissions: [],
   },
 ];

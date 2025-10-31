@@ -1,66 +1,76 @@
-import React from 'react';
 
-const mockTeam = [
-    { id: 1, name: 'John Smith', rank: 'OFC', status: 'On Mission' },
-    { id: 2, name: 'Jane Doe', rank: 'PVT', status: 'Available' },
-    { id: 3, name: 'Mike Johnson', rank: 'OFC', status: 'On Mission' },
-];
-
-const mockSpotChecks = [
-    { id: 1, guard: 'John Smith', mission: 'Corporate Office Security', time: '14:30', status: 'Passed' },
-    { id: 2, guard: 'Emily White', mission: 'Retail Loss Prevention', time: '11:00', status: 'Passed' },
-];
+import React, { useState } from 'react';
+import { useMissions } from '../context/MissionContext';
+import { useNavigate } from 'react-router-dom';
+import TrainingApproval from './TrainingApproval';
 
 const SupervisorDashboard: React.FC = () => {
+    const [activeTab, setActiveTab] = useState('spotChecks');
+
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'spotChecks':
+                return <SpotCheckTabContent />;
+            case 'training':
+                return <TrainingApproval />;
+            default:
+                return null;
+        }
+    };
+
     return (
-        <div className="border-t pt-8 space-y-8">
-            <div>
-                <h2 className="text-2xl font-bold text-sss-ebony mb-4">Team Overview</h2>
-                <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-sss-grey uppercase tracking-wider">Guard Name</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-sss-grey uppercase tracking-wider">Rank</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-sss-grey uppercase tracking-wider">Status</th>
-                                <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {mockTeam.map(guard => (
-                                <tr key={guard.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-sss-ebony">{guard.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-sss-grey">{guard.rank}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${guard.status === 'On Mission' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                            {guard.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <a href="#" className="text-sss-sage hover:text-opacity-80">Message</a>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+        <div>
+            <div className="mb-6 border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                     <button
+                        onClick={() => setActiveTab('spotChecks')}
+                        className={`${
+                            activeTab === 'spotChecks'
+                                ? 'border-sss-sage text-sss-ebony'
+                                : 'border-transparent text-sss-grey hover:text-sss-ebony hover:border-gray-300'
+                        } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                    >
+                        Spot Check Assignments
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('training')}
+                        className={`${
+                            activeTab === 'training'
+                                ? 'border-sss-sage text-sss-ebony'
+                                : 'border-transparent text-sss-grey hover:text-sss-ebony hover:border-gray-300'
+                        } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                    >
+                        Training Management
+                    </button>
+                </nav>
             </div>
-            <div>
-                <h2 className="text-2xl font-bold text-sss-ebony mb-4">Recent Spot Checks</h2>
-                <div className="space-y-3">
-                    {mockSpotChecks.map(check => (
-                         <div key={check.id} className="bg-gray-50 rounded-lg p-4 shadow-sm border flex justify-between items-center">
-                            <div>
-                                <p className="font-semibold text-sss-black">Guard: <span className="font-normal">{check.guard}</span></p>
-                                <p className="text-sm text-sss-grey">{check.mission}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="font-bold text-green-600">{check.status}</p>
-                                <p className="text-xs text-sss-grey">at {check.time}</p>
-                            </div>
+            {renderTabContent()}
+        </div>
+    );
+};
+
+const SpotCheckTabContent: React.FC = () => {
+    const { missions } = useMissions();
+    const navigate = useNavigate();
+    const spotCheckMissions = missions.filter(m => m.assignedGuards.length > 0 && m.status !== 'Completed');
+
+    return (
+        <div>
+            <h2 className="text-2xl font-bold text-sss-ebony mb-4">Missions Requiring Spot Checks</h2>
+            <div className="space-y-4">
+                {spotCheckMissions.length > 0 ? spotCheckMissions.map(mission => (
+                    <div key={mission.id} className="bg-gray-50 rounded-lg p-4 shadow-sm border flex justify-between items-center">
+                        <div>
+                            <p className="font-semibold text-sss-black">{mission.title}</p>
+                            <p className="text-sm text-sss-grey">Guards: {mission.assignedGuards.join(', ') || 'None'}</p>
                         </div>
-                    ))}
-                </div>
+                        <button 
+                            onClick={() => navigate(`/spotcheck/${mission.id}`)}
+                            className="bg-sss-sage text-white font-bold py-2 px-4 rounded-md hover:bg-opacity-80 transition-all text-sm">
+                            Start Spot Check
+                        </button>
+                    </div>
+                )) : <p className="text-sss-grey text-center py-4">No active missions require a spot check at this time.</p>}
             </div>
         </div>
     );

@@ -1,18 +1,31 @@
+
 import React from 'react';
-
-const mockActiveMissions = [
-    { id: 1, title: 'Downtown Music Festival', guards: 5, status: 'Active' },
-    { id: 2, title: 'Corporate Office Security', guards: 2, status: 'Active' },
-];
-
-const mockPendingApprovals = [
-    { id: 1, type: 'New Guard Application', name: 'Emily White' },
-    { id: 2, type: 'Client Contract', name: 'Tech Solutions LLC' },
-];
+import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
+import { useMissions } from '../context/MissionContext';
+import { MissionStatus } from '../types';
+import { canApprovePromotions, canApproveTraining } from '../utils/permissions';
+import PromotionReview from './PromotionReview';
+import TrainingApproval from './TrainingApproval';
 
 const OperationsDashboard: React.FC = () => {
+    const { user, users, approveUser } = useAuth();
+    const { missions } = useMissions();
+    const pendingApprovals = users.filter(user => user.status === 'Pending');
+    const activeMissions = missions.filter(m => m.status !== MissionStatus.Completed);
+
     return (
         <div className="border-t pt-8 space-y-8">
+             <div>
+                <h2 className="text-2xl font-bold text-sss-ebony mb-4">Quick Actions</h2>
+                <Link to="/create-user" className="inline-block bg-sss-sage text-white font-bold py-2 px-6 rounded-lg hover:bg-opacity-80 transition-transform transform hover:scale-105 duration-300 shadow-md">
+                    Create New Staff User
+                </Link>
+            </div>
+            
+            {canApprovePromotions(user) && <PromotionReview />}
+            {canApproveTraining(user) && <TrainingApproval />}
+
             <div>
                 <h2 className="text-2xl font-bold text-sss-ebony mb-4">Active Missions Oversight</h2>
                 <div className="bg-white shadow-sm rounded-lg overflow-hidden">
@@ -26,10 +39,10 @@ const OperationsDashboard: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {mockActiveMissions.map(mission => (
+                            {activeMissions.map(mission => (
                                 <tr key={mission.id}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-sss-ebony">{mission.title}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-sss-grey">{mission.guards}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-sss-grey">{mission.assignedGuards.length}</td>
                                      <td className="px-6 py-4 whitespace-nowrap">
                                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                             {mission.status}
@@ -42,23 +55,32 @@ const OperationsDashboard: React.FC = () => {
                             ))}
                         </tbody>
                     </table>
+                     {activeMissions.length === 0 && (
+                        <p className="text-center py-8 text-sss-grey">No active missions.</p>
+                    )}
                 </div>
             </div>
             <div>
-                <h2 className="text-2xl font-bold text-sss-ebony mb-4">Pending Approvals</h2>
-                <div className="space-y-3">
-                    {mockPendingApprovals.map(approval => (
-                         <div key={approval.id} className="bg-gray-50 rounded-lg p-4 shadow-sm border flex justify-between items-center">
-                            <div>
-                                <p className="font-semibold text-sss-black">{approval.type}</p>
-                                <p className="text-sm text-sss-grey">{approval.name}</p>
+                <h2 className="text-2xl font-bold text-sss-ebony mb-4">Pending Approvals ({pendingApprovals.length})</h2>
+                {pendingApprovals.length > 0 ? (
+                    <div className="space-y-3">
+                        {pendingApprovals.map(approval => (
+                            <div key={approval.email} className="bg-gray-50 rounded-lg p-4 shadow-sm border flex justify-between items-center">
+                                <div>
+                                    <p className="font-semibold text-sss-black">{approval.role} Application</p>
+                                    <p className="text-sm text-sss-grey">{approval.name} ({approval.email})</p>
+                                </div>
+                                <button 
+                                    onClick={() => approveUser(approval.email)}
+                                    className="bg-sss-sage text-white font-bold py-1 px-4 rounded-md hover:bg-opacity-80 transition-all text-sm">
+                                    Approve
+                                </button>
                             </div>
-                            <button className="bg-sss-sage text-white font-bold py-1 px-4 rounded-md hover:bg-opacity-80 transition-all text-sm">
-                                Review
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-sss-grey text-center py-4">No pending approvals.</p>
+                )}
             </div>
         </div>
     );

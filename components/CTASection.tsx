@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -10,13 +9,13 @@ const CTASection: React.FC = () => {
                 <p className="mt-4 text-lg text-sss-grey max-w-2xl mx-auto">Join the new standard in security workforce management. Whether you're a guard seeking missions or a client needing protection, we have you covered.</p>
                 <div className="mt-8 flex justify-center gap-4">
                     <Link 
-                        to="/register/Client" 
+                        to="/apply/client" 
                         className="bg-sss-sage text-white font-bold py-3 px-8 rounded-lg hover:bg-opacity-80 transition-transform transform hover:scale-105 duration-300 shadow-lg"
                     >
                         Become a Client
                     </Link>
                     <Link 
-                        to="/register/Guard" 
+                        to="/apply/guard" 
                         className="bg-sss-grey text-white font-bold py-3 px-8 rounded-lg hover:bg-opacity-80 transition-transform transform hover:scale-105 duration-300 shadow-lg"
                     >
                         Join as a Guard

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const NavLink: React.FC<{ to: string; children: React.ReactNode; onClick?: () => void }> = ({ to, children, onClick }) => (
@@ -13,6 +13,7 @@ const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -21,6 +22,34 @@ const Header: React.FC = () => {
 
   const menuToggle = () => setIsMenuOpen(!isMenuOpen);
 
+  // Simplified header for dashboard view
+  if (user && (location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/training-center') || location.pathname.startsWith('/payroll') || location.pathname.startsWith('/uniforms') || location.pathname.startsWith('/profile'))) {
+    return (
+       <header className="bg-white text-sss-ebony shadow-md sticky top-0 z-40">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="flex items-center justify-end h-16">
+            <div className="flex items-center space-x-4">
+               {/* Fix: Conditionally render rank to avoid extra spacing for users without one. */}
+               <span className="font-semibold text-right">
+                {user.name}
+                {user.rank && (
+                  <>
+                    <br/>
+                    <span className="text-sm text-sss-sage font-bold">{user.rank}</span>
+                  </>
+                )}
+               </span>
+                 <button onClick={handleLogout} className="bg-sss-grey hover:bg-opacity-80 text-white font-bold py-2 px-4 rounded-md transition-all duration-300 text-sm">
+                  Log Out
+                </button>
+            </div>
+           </div>
+        </div>
+      </header>
+    )
+  }
+
+  // Full header for public pages
   return (
     <header className="bg-sss-ebony text-sss-white sticky top-0 z-50 shadow-lg">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">

@@ -13,22 +13,22 @@ const HeroSection: React.FC = () => {
                 </p>
                 <div className="flex flex-wrap justify-center gap-4">
                     <Link 
-                        to="/register/Client" 
+                        to="/apply/client" 
                         className="bg-sss-sage text-white font-bold py-3 px-6 rounded-lg hover:bg-opacity-80 transition-transform transform hover:scale-105 duration-300 shadow-lg"
                     >
-                        New Client
+                        For Clients
                     </Link>
                     <Link 
-                        to="/register/Guard" 
+                        to="/apply/guard" 
                         className="bg-sss-grey text-white font-bold py-3 px-6 rounded-lg hover:bg-opacity-80 transition-transform transform hover:scale-105 duration-300 shadow-lg"
                     >
-                        New Guard
+                        For Guards
                     </Link>
-                    <Link 
-                        to="/register/Supervisor" 
+                     <Link 
+                        to="/apply" 
                         className="border-2 border-sss-sage text-sss-sage font-bold py-3 px-6 rounded-lg hover:bg-sss-sage hover:text-white transition-all duration-300 shadow-lg"
                     >
-                        New Supervisor
+                        View All Positions
                     </Link>
                 </div>
             </div>
