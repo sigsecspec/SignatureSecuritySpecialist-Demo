@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +9,7 @@ const SupervisorApplicationPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [teamCode, setTeamCode] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { register } = useAuth(); 
@@ -20,14 +22,12 @@ const SupervisorApplicationPage: React.FC = () => {
     }
     setError('');
     
-    const newUser: Omit<User, 'password' | 'status' | 'trainings' | 'assignedMissions' | 'pendingTrainings' | 'uniformStatus'> = {
+    register({
         name: fullName,
         email,
         role: UserRole.Supervisor,
         title: 'Supervisor Applicant',
-    };
-    
-    register(newUser);
+    }, teamCode);
     
     alert(`Thank you, ${fullName}. Your application for a supervisor position has been submitted and is pending review.`);
     navigate('/login');
@@ -49,6 +49,13 @@ const SupervisorApplicationPage: React.FC = () => {
             placeholder="Full Name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
+          />
+           <input
+            type="text"
+            className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-sss-sage focus:border-sss-sage sm:text-sm"
+            placeholder="Operations Team Code (Optional)"
+            value={teamCode}
+            onChange={(e) => setTeamCode(e.target.value)}
           />
           <input
             type="email"

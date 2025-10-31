@@ -1,3 +1,4 @@
+
 // Fix: Import React to use its type definitions.
 import type React from 'react';
 
@@ -13,7 +14,7 @@ export enum UserRole {
   // Field Team
   Supervisor = 'Supervisor', // SGT (Sergeant)
   TrainingOfficer = 'TrainingOfficer', // CPL (Corporal)
-  LeadGuard = 'LeadGuard', // PVT (Private)
+  LeadGuard = 'LeadGuard', 
   Guard = 'Guard',
   
   // External
@@ -22,6 +23,7 @@ export enum UserRole {
 
 export type UserRank = 
   'OFC (Officer)' | 
+  'PVT (Private)' |
   'CPL (Corporal)' | 
   'SGT (Sergeant)' | 
   'LT (Lieutenant)' | 
@@ -55,6 +57,7 @@ export interface Team {
   id: number;
   name: string;
   director: string;
+  manager: string;
 }
 
 export type UserTrainingStatus = 'Available' | 'Pending' | 'Completed' | 'Denied' | 'Training Needed';
@@ -103,6 +106,7 @@ export interface Mission {
   teamId: number;
   assignedGuards: string[]; // Array of guard emails
   leadGuardEmail?: string; // Email of the designated lead guard
+  checkedInGuards: string[]; // Guards checked in by Lead Guard or themselves
   capacity: number;
   status: MissionStatus;
   paymentStatus: 'Pending' | 'Paid' | 'Received';

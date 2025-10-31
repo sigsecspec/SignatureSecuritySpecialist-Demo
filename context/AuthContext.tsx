@@ -1,5 +1,6 @@
+
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { User, UserStatus, UserRole } from '../types';
+import { User, UserStatus, UserRole, UserRank } from '../types';
 import { users as initialUsers } from '../data/users';
 
 interface AuthContextType {
@@ -7,19 +8,35 @@ interface AuthContextType {
   users: User[];
   login: (userToLogin: User) => boolean;
   logout: () => void;
-  register: (newUser: Omit<User, 'password' | 'status' | 'trainings' | 'assignedMissions' | 'pendingTrainings' | 'uniformStatus' | 'rank' | 'subscription' | 'promotionStatus'>) => void;
+  register: (newUser: Omit<User, 'password' | 'status' | 'trainings' | 'assignedMissions' | 'pendingTrainings' | 'uniformStatus' | 'rank' | 'subscription' | 'promotionStatus'>, teamCode?: string) => void;
   createUser: (newUser: Omit<User, 'password' | 'status' | 'trainings' | 'assignedMissions' | 'pendingTrainings' | 'uniformStatus' | 'subscription' | 'promotionStatus'>) => void;
   approveUser: (email: string) => void;
   addTrainingToUser: (trainingId: string) => void;
   assignMissionToUser: (missionId: number) => void;
   reviewTraining: (userEmail: string, trainingId: string, decision: 'approve' | 'deny') => void;
-  updateUniformStatus: (userEmail: string, status: User['uniformStatus']) => void;
+  updateUniformStatus: (userEmail: string, status: User['uniformStatus'], action: 'send' | 'receive') => void;
   applyForPromotion: (email: string) => void;
   reviewPromotion: (email: string, decision: 'approve' | 'deny') => void;
   updateUserSettings: (updatedUser: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const getRankForRole = (role: UserRole): UserRank | undefined => {
+    switch (role) {
+        case UserRole.Owner: return 'CHF (Chief)';
+        case UserRole.CoOwner: return 'ASST CHF (Assistant Chief)';
+        case UserRole.Secretary: return 'DPT CHF (Deputy Chief)';
+        case UserRole.Dispatch: return 'CMD (Commander)';
+        case UserRole.OperationsDirector: return 'CAP (Captain)';
+        case UserRole.OperationsManager: return 'LT (Lieutenant)';
+        case UserRole.Supervisor: return 'SGT (Sergeant)';
+        case UserRole.TrainingOfficer: return 'CPL (Corporal)';
+        case UserRole.LeadGuard: return 'PVT (Private)';
+        case UserRole.Guard: return 'OFC (Officer)';
+        default: return undefined;
+    }
+}
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -44,7 +61,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
   };
 
-  const register = (newUser: Omit<User, 'password' | 'status' | 'trainings' | 'assignedMissions' | 'pendingTrainings' | 'uniformStatus' | 'rank' | 'subscription' | 'promotionStatus'>) => {
+  const register = (newUser: Omit<User, 'password' | 'status' | 'trainings' | 'assignedMissions' | 'pendingTrainings' | 'uniformStatus' | 'rank' | 'subscription' | 'promotionStatus'>, teamCode?: string) => {
     const userWithDefaults: User = { 
         ...newUser, 
         password: 'password123',
@@ -55,12 +72,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         assignedMissions: [],
         subscription: 'Basic',
         promotionStatus: 'None',
+        rank: getRankForRole(newUser.role),
     };
-    if (newUser.role === UserRole.Guard) {
-      userWithDefaults.rank = 'OFC (Officer)';
-    } else if (newUser.role === UserRole.Supervisor) {
-      userWithDefaults.rank = 'SGT (Sergeant)';
+    
+    // Team assignment logic based on owner plans
+    if ([UserRole.Guard, UserRole.Supervisor, UserRole.Client].includes(newUser.role)) {
+        if (teamCode?.toLowerCase() === 'alpha') {
+            userWithDefaults.teamId = 1;
+        } else if (teamCode?.toLowerCase() === 'bravo') {
+            userWithDefaults.teamId = 2;
+        } else {
+            // Default assignment if no code or invalid code
+            userWithDefaults.teamId = Math.random() < 0.5 ? 1 : 2;
+        }
     }
+
     setUsers(prevUsers => [...prevUsers, userWithDefaults]);
   };
 
@@ -75,11 +101,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         assignedMissions: [],
         subscription: 'Basic',
         promotionStatus: 'None',
+        rank: getRankForRole(newUser.role),
     };
-     if (newUser.role === UserRole.Guard) userWithDefaults.rank = 'OFC (Officer)';
-     else if (newUser.role === UserRole.Supervisor) userWithDefaults.rank = 'SGT (Sergeant)';
-     else if (newUser.role === UserRole.OperationsManager) userWithDefaults.rank = 'LT (Lieutenant)';
-     else if (newUser.role === UserRole.OperationsDirector) userWithDefaults.rank = 'CAP (Captain)';
      
      setUsers(prevUsers => [...prevUsers, userWithDefaults]);
   };
@@ -119,9 +142,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }));
   };
 
-  const updateUniformStatus = (userEmail: string, status: User['uniformStatus']) => {
+  const updateUniformStatus = (userEmail: string, status: User['uniformStatus'], action: 'send' | 'receive') => {
     setUsers(prevUsers => prevUsers.map(u => u.email === userEmail ? { ...u, uniformStatus: status } : u));
-    if (user && user.email === userEmail) {
+    if (user && user.email === userEmail && action === 'receive') {
         setUser({ ...user, uniformStatus: status });
     }
   };
@@ -151,8 +174,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (u.email === email) {
         if (decision === 'approve') {
           // This is a simplified promotion logic. A real app would have a more complex rank progression.
-          const newRank = u.rank === 'OFC (Officer)' ? 'CPL (Corporal)' : u.rank;
-          return { ...u, promotionStatus: 'Approved', rank: newRank };
+          const newRank = u.rank === 'OFC (Officer)' ? 'PVT (Private)' : u.rank;
+          return { ...u, promotionStatus: 'Approved', rank: newRank, uniformStatus: 'Needed' };
         } else {
           return { ...u, promotionStatus: 'Denied' };
         }

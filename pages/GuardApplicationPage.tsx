@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +10,7 @@ const GuardApplicationPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [guardType, setGuardType] = useState<'Base' | 'Flex' | 'Seasonal'>('Base');
+  const [teamCode, setTeamCode] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { register } = useAuth(); 
@@ -27,7 +29,7 @@ const GuardApplicationPage: React.FC = () => {
         role: UserRole.Guard,
         title: 'Security Officer Applicant',
         guardType: guardType,
-    });
+    }, teamCode);
     
     alert(`Thank you, ${fullName}. Your application has been submitted and is pending review. You can track its status by attempting to log in.`);
     navigate('/login');
@@ -49,6 +51,13 @@ const GuardApplicationPage: React.FC = () => {
             placeholder="Full Name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
+          />
+           <input
+            type="text"
+            className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-sss-sage focus:border-sss-sage sm:text-sm"
+            placeholder="Operations Team Code (Optional)"
+            value={teamCode}
+            onChange={(e) => setTeamCode(e.target.value)}
           />
           <div>
             <label htmlFor="guardType" className="block text-sm font-medium text-gray-700 mb-1">Guard Type</label>

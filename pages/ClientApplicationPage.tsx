@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +9,7 @@ const ClientApplicationPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [teamCode, setTeamCode] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -20,14 +22,12 @@ const ClientApplicationPage: React.FC = () => {
     }
     setError('');
     
-    const newUser: Omit<User, 'password' | 'status' | 'trainings' | 'assignedMissions' | 'pendingTrainings' | 'uniformStatus'> = {
+    register({
         name: companyName,
         email,
         role: UserRole.Client,
         title: 'Client Applicant',
-    };
-    
-    register(newUser);
+    }, teamCode);
     
     alert(`Thank you, ${companyName}. Your application has been submitted and is pending review. An operations manager will contact you shortly.`);
     navigate('/login');
@@ -49,6 +49,13 @@ const ClientApplicationPage: React.FC = () => {
             placeholder="Company Name"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
+          />
+           <input
+            type="text"
+            className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-sss-sage focus:border-sss-sage sm:text-sm"
+            placeholder="Operations Team Code (Optional)"
+            value={teamCode}
+            onChange={(e) => setTeamCode(e.target.value)}
           />
           <input
             type="email"

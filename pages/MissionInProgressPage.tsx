@@ -1,25 +1,25 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMissions } from '../context/MissionContext';
 import { useAuth } from '../context/AuthContext';
 import CameraComponent from '../components/CameraComponent';
+import { Mission } from '../types';
 
 type MissionStage = 'CheckIn' | 'OnMission' | 'OnBreak' | 'CheckOut' | 'Completed';
 
 const MissionInProgressPage: React.FC = () => {
     const { missionId } = useParams();
     const navigate = useNavigate();
-    const { getMissionById } = useMissions();
+    const { getMissionById, updateMission, completeMission } = useMissions();
     const { user, users } = useAuth();
     
     const [stage, setStage] = useState<MissionStage>('CheckIn');
     const [selfie, setSelfie] = useState<string | null>(null);
     const [breakTime, setBreakTime] = useState(0);
-    const [checkedInGuards, setCheckedInGuards] = useState<string[]>([]);
     const breakIntervalRef = useRef<number | null>(null);
 
     const mission = getMissionById(Number(missionId));
-    const isLeadGuard = user?.email === mission?.leadGuardEmail;
 
     useEffect(() => {
         if (breakTime > 0 && stage === 'OnBreak') {
@@ -36,7 +36,7 @@ const MissionInProgressPage: React.FC = () => {
         };
     }, [breakTime, stage]);
 
-    if (!mission) {
+    if (!mission || !user) {
         return (
             <div className="text-center py-10">
                 <h1 className="text-2xl font-bold text-red-600">Mission Not Found</h1>
@@ -46,33 +46,44 @@ const MissionInProgressPage: React.FC = () => {
         );
     }
     
-    const otherGuards = mission.assignedGuards.filter(email => email !== user?.email);
+    const isLeadGuard = user.email === mission.leadGuardEmail;
+    const otherGuards = mission.assignedGuards.filter(email => email !== user.email);
 
     const handleCheckIn = (imageData: string) => {
         setSelfie(imageData);
-        if (isLeadGuard) {
-            setCheckedInGuards([user?.email || '']);
-        }
+        const updatedMission: Mission = {
+            ...mission,
+            checkedInGuards: [...mission.checkedInGuards, user.email]
+        };
+        updateMission(updatedMission);
         alert("Check-in successful! Your mission has started.");
         setStage('OnMission');
     };
-
-    const handleGuardCheckIn = (guardEmail: string) => {
-        if (!isLeadGuard) return;
-        setCheckedInGuards(prev => [...prev, guardEmail]);
-    };
     
-    const handleGuardCheckOut = (guardEmail: string) => {
-         if (!isLeadGuard) return;
-         // In a real app, this would be a more robust state update
-         alert(`${guardEmail} has been checked out.`);
+    const handleGuardCheckInOut = (guardEmail: string, type: 'in' | 'out') => {
+        if (!isLeadGuard) return;
+        
+        let updatedCheckedInGuards = [...mission.checkedInGuards];
+        if (type === 'in' && !updatedCheckedInGuards.includes(guardEmail)) {
+            updatedCheckedInGuards.push(guardEmail);
+        } else if (type === 'out') {
+            updatedCheckedInGuards = updatedCheckedInGuards.filter(email => email !== guardEmail);
+        }
+
+        const updatedMission: Mission = { ...mission, checkedInGuards: updatedCheckedInGuards };
+        updateMission(updatedMission);
+        alert(`${users.find(u => u.email === guardEmail)?.name} has been checked ${type}.`);
     }
 
     const handleCheckOut = (imageData: string) => {
         setSelfie(imageData);
-        alert("Check-out successful! Your mission is complete.");
+        if (isLeadGuard) {
+            completeMission(mission.id);
+            alert("All guards checked out. Mission is now complete.");
+        } else {
+             alert("Check-out successful! Waiting for Lead Guard to complete the mission.");
+        }
         setStage('Completed');
-        // In a real app, you'd update the mission status globally here
         setTimeout(() => navigate('/dashboard'), 2000);
     };
     
@@ -90,21 +101,22 @@ const MissionInProgressPage: React.FC = () => {
     const renderLeadGuardDashboard = () => (
         <div className="mt-6 border-t pt-6">
             <h3 className="text-lg font-bold text-sss-ebony mb-4">Lead Guard: Team Management</h3>
+            <p className="text-sm text-sss-grey mb-4">You must check in all guards for the mission to proceed, and check out all guards before you can complete the mission.</p>
             <div className="space-y-3">
             {otherGuards.map(guardEmail => {
-                const isCheckedIn = checkedInGuards.includes(guardEmail);
+                const isCheckedIn = mission.checkedInGuards.includes(guardEmail);
                 return (
                     <div key={guardEmail} className="bg-gray-100 p-3 rounded-lg flex justify-between items-center">
                         <p>{users.find(u => u.email === guardEmail)?.name || guardEmail}</p>
                         <div className="flex space-x-2">
                             <button 
-                                onClick={() => handleGuardCheckIn(guardEmail)} 
+                                onClick={() => handleGuardCheckInOut(guardEmail, 'in')} 
                                 disabled={isCheckedIn}
                                 className="text-xs bg-green-500 text-white font-semibold py-1 px-3 rounded-md disabled:bg-gray-400">
                                 Check In
                             </button>
                             <button 
-                                onClick={() => handleGuardCheckOut(guardEmail)}
+                                onClick={() => handleGuardCheckInOut(guardEmail, 'out')}
                                 disabled={!isCheckedIn}
                                 className="text-xs bg-red-500 text-white font-semibold py-1 px-3 rounded-md disabled:bg-gray-400">
                                 Check Out
@@ -132,12 +144,11 @@ const MissionInProgressPage: React.FC = () => {
     )
 
     const renderContent = () => {
+        const leadGuardCheckedIn = mission.leadGuardEmail ? mission.checkedInGuards.includes(mission.leadGuardEmail) : true;
+        
         switch (stage) {
             case 'CheckIn':
-                const leadGuardMustCheckIn = isLeadGuard && !checkedInGuards.includes(user?.email || '');
-                const guardWaitingForLead = !isLeadGuard && mission.leadGuardEmail && !checkedInGuards.includes(mission.leadGuardEmail);
-
-                if (guardWaitingForLead) {
+                if (!isLeadGuard && !leadGuardCheckedIn) {
                     return (
                         <div className="text-center">
                              <h2 className="text-2xl font-bold text-sss-ebony mb-4">Waiting for Lead Guard</h2>
@@ -145,7 +156,6 @@ const MissionInProgressPage: React.FC = () => {
                         </div>
                     )
                 }
-
                 return (
                     <div className="text-center">
                         <h2 className="text-2xl font-bold text-sss-ebony mb-4">Mission Check-In</h2>
@@ -154,6 +164,8 @@ const MissionInProgressPage: React.FC = () => {
                     </div>
                 );
             case 'OnMission':
+                const allGuardsCheckedOutByLead = isLeadGuard && otherGuards.every(email => !mission.checkedInGuards.includes(email));
+
                 return (
                     <div>
                         <div className="flex justify-between items-center mb-6">
@@ -173,7 +185,14 @@ const MissionInProgressPage: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
                             <button onClick={() => startBreak(600)} className="bg-blue-500 text-white font-bold py-3 px-4 rounded-md hover:bg-blue-600 transition-colors">Take 10 Min Break</button>
                             <button onClick={() => startBreak(1800)} className="bg-blue-500 text-white font-bold py-3 px-4 rounded-md hover:bg-blue-600 transition-colors">Take 30 Min Break</button>
-                            <button onClick={() => setStage('CheckOut')} className="bg-sss-sage text-white font-bold py-3 px-4 rounded-md hover:bg-opacity-80 transition-colors">Check Out of Mission</button>
+                            <button 
+                                onClick={() => setStage('CheckOut')} 
+                                disabled={isLeadGuard && !allGuardsCheckedOutByLead}
+                                className="bg-sss-sage text-white font-bold py-3 px-4 rounded-md hover:bg-opacity-80 transition-colors disabled:bg-sss-grey disabled:cursor-not-allowed"
+                                title={isLeadGuard && !allGuardsCheckedOutByLead ? "You must check out all other guards first" : ""}
+                            >
+                                {isLeadGuard ? 'Final Check-Out' : 'Check Out of Mission'}
+                            </button>
                         </div>
                     </div>
                 );

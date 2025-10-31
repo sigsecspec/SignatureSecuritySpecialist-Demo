@@ -1,22 +1,35 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMissions } from '../context/MissionContext';
 import CameraComponent from '../components/CameraComponent';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 
 type SpotCheckStage = 'CheckIn' | 'SpotChecking' | 'FinalReport' | 'Completed';
 type CheckStage = 'First' | 'Mid' | 'Last';
+
+interface GuardCheckState {
+    present: boolean;
+    uniform: boolean;
+    gear: boolean;
+    photoUploaded: boolean;
+}
+
+const initialGuardCheckState: GuardCheckState = { present: false, uniform: false, gear: false, photoUploaded: false };
 
 const SpotCheckPage: React.FC = () => {
     const { missionId } = useParams();
     const navigate = useNavigate();
     const { getMissionById } = useMissions();
     const { users } = useAuth();
+    const { addNotification } = useNotification();
     
     const [stage, setStage] = useState<SpotCheckStage>('CheckIn');
     const [currentCheck, setCurrentCheck] = useState<CheckStage | null>(null);
     const [completedChecks, setCompletedChecks] = useState<CheckStage[]>([]);
-    const [checkedGuards, setCheckedGuards] = useState<{[key: string]: boolean}>({});
+    const [guardChecks, setGuardChecks] = useState<{ [key: string]: GuardCheckState }>({});
+    const [isCameraForGuard, setIsCameraForGuard] = useState<string | null>(null);
 
     const mission = getMissionById(Number(missionId));
 
@@ -31,56 +44,78 @@ const SpotCheckPage: React.FC = () => {
     }
     
     const handleCheckIn = (imageData: string) => {
-        alert("Spot check attendance verified. You may now begin checks.");
+        addNotification({type: 'success', message: 'Spot check attendance verified.'});
         setStage('SpotChecking');
     };
 
     const handleFinalReport = (imageData: string) => {
-        alert("Final report submitted. Spot check complete.");
+        addNotification({type: 'success', message: 'Final report submitted. Spot check complete.'});
         setStage('Completed');
         setTimeout(() => navigate('/dashboard'), 2000);
     }
     
-    const handleGuardPhotoUpload = (guardEmail: string) => {
+    const handleGuardPhotoUpload = (guardEmail: string, imageData: string) => {
+        setGuardChecks(prev => ({ ...prev, [guardEmail]: { ...prev[guardEmail], photoUploaded: true } }));
+        setIsCameraForGuard(null);
         const guardName = users.find(u => u.email === guardEmail)?.name || guardEmail;
-        alert(`Photo uploaded for ${guardName}.`);
-        setCheckedGuards(prev => ({...prev, [guardEmail]: true}));
+        addNotification({type: 'info', message: `Photo uploaded for ${guardName}.`});
     }
 
     const completeCurrentCheck = () => {
         if (currentCheck) {
             setCompletedChecks(prev => [...prev, currentCheck]);
             setCurrentCheck(null);
-            setCheckedGuards({});
+            setGuardChecks({});
         }
     };
+    
+    const allGuardsCheckedForCurrentStage = (mission.assignedGuards || []).every(email => guardChecks[email]?.photoUploaded);
 
     const allChecksDone = completedChecks.length === 3;
 
     const renderGuardChecklist = () => (
         <div>
-            <h3 className="text-xl font-bold text-sss-ebony mb-4">{currentCheck} Spot Check</h3>
-            <div className="space-y-3">
-            {(mission.assignedGuards || []).map(guardEmail => {
-                const guard = users.find(u => u.email === guardEmail);
-                const guardName = guard ? guard.name : guardEmail;
-                return (
-                    <div key={guardEmail} className="bg-gray-50 p-3 rounded-lg flex items-center justify-between">
-                        <p>{guardName}</p>
-                        {checkedGuards[guardEmail] ? (
-                             <span className="text-green-600 font-semibold">Checked</span>
-                        ) : (
-                            <button onClick={() => handleGuardPhotoUpload(guardEmail)} className="text-sm bg-blue-500 text-white py-1 px-3 rounded-md">
-                                Check & Upload Photo
-                            </button>
-                        )}
-                    </div>
-                );
-            })}
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-sss-ebony">{currentCheck} Spot Check</h3>
+                <button onClick={() => setCurrentCheck(null)} className="text-sm font-semibold text-sss-grey">Back</button>
             </div>
+
+            {isCameraForGuard ? (
+                <div>
+                     <p className="text-center font-semibold mb-4">Take photo of {users.find(u => u.email === isCameraForGuard)?.name}</p>
+                     <CameraComponent onCapture={(img) => handleGuardPhotoUpload(isCameraForGuard, img)} />
+                     <button onClick={() => setIsCameraForGuard(null)} className="mt-4 w-full bg-sss-grey text-white py-2 rounded-md">Cancel</button>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                {(mission.assignedGuards || []).map(guardEmail => {
+                    const guard = users.find(u => u.email === guardEmail);
+                    const guardName = guard ? guard.name : guardEmail;
+                    const checks = guardChecks[guardEmail] || initialGuardCheckState;
+                    return (
+                        <div key={guardEmail} className="bg-gray-50 p-4 rounded-lg">
+                            <p className="font-bold mb-2">{guardName}</p>
+                            <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
+                                <div className="flex space-x-4">
+                                    {['present', 'uniform', 'gear'].map(check => (
+                                         <label key={check} className="flex items-center text-sm">
+                                            <input type="checkbox" checked={checks[check as keyof GuardCheckState] as boolean} onChange={e => setGuardChecks(prev => ({...prev, [guardEmail]: {...(prev[guardEmail] || initialGuardCheckState), [check]: e.target.checked}}))} className="form-checkbox h-4 w-4 text-sss-sage rounded"/>
+                                            <span className="ml-2 capitalize">{check}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                                <button onClick={() => setIsCameraForGuard(guardEmail)} disabled={checks.photoUploaded} className="text-sm bg-blue-500 text-white py-1 px-3 rounded-md disabled:bg-gray-400">
+                                    {checks.photoUploaded ? 'Photo Uploaded' : 'Upload Photo'}
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+                </div>
+            )}
              <button 
                 onClick={completeCurrentCheck} 
-                disabled={Object.keys(checkedGuards).length < (mission.assignedGuards || []).length}
+                disabled={!allGuardsCheckedForCurrentStage}
                 className="mt-6 w-full bg-sss-sage text-white font-bold py-2 rounded-md disabled:bg-sss-grey disabled:cursor-not-allowed">
                 Complete {currentCheck} Check
             </button>
