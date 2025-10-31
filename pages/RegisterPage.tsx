@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserRole } from '../types';
+import { UserRole, User } from '../types';
 
 const RegisterPage: React.FC = () => {
   const { role } = useParams<{ role: string }>();
@@ -11,11 +11,10 @@ const RegisterPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [guardType, setGuardType] = useState('Base');
+  const [guardType, setGuardType] = useState<'Base' | 'Flex' | 'Seasonal'>('Base');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  // Using a mock login for demo registration
-  // const { login } = useAuth(); 
+  const { register } = useAuth(); 
 
   useEffect(() => {
     if (role) {
@@ -34,9 +33,17 @@ const RegisterPage: React.FC = () => {
     }
     setError('');
     
-    // Mock registration logic: In a real app, this would hit a registration endpoint.
-    // For the demo, we'll just show an alert and redirect.
-    alert(`Registration successful for ${fullName || companyName} as a ${userRole}!`);
+    const newUser: Omit<User, 'password'> = {
+        name: userRole === UserRole.Client ? companyName : fullName,
+        email,
+        role: userRole,
+        title: userRole === UserRole.Client ? 'Client Contact' : (userRole === UserRole.Guard ? 'Security Officer' : 'Field Supervisor'),
+        guardType: userRole === UserRole.Guard ? guardType : undefined,
+    };
+    
+    register(newUser);
+    
+    alert(`Registration successful for ${newUser.name} as a ${userRole}! You will now be redirected to the login page.`);
     navigate('/login');
   };
   
@@ -72,11 +79,11 @@ const RegisterPage: React.FC = () => {
               />
               {userRole === UserRole.Guard && (
                  <div>
-                    <label htmlFor="guardType" className="sr-only">Guard Type</label>
+                    <label htmlFor="guardType" className="block text-sm font-medium text-gray-700 mb-1">Guard Type</label>
                     <select
                       id="guardType"
                       value={guardType}
-                      onChange={(e) => setGuardType(e.target.value)}
+                      onChange={(e) => setGuardType(e.target.value as 'Base' | 'Flex' | 'Seasonal')}
                       className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-sss-sage focus:border-sss-sage sm:text-sm"
                     >
                       <option value="Base">Base Officer</option>
@@ -114,7 +121,7 @@ const RegisterPage: React.FC = () => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <div>
             <button
               type="submit"

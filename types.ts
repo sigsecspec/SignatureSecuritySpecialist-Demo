@@ -16,6 +16,7 @@ export interface User {
   name: string;
   title: string; // e.g., "Owner", "Operations Director"
   password?: string; // Only used in mock data, not exposed to client
+  guardType?: 'Base' | 'Flex' | 'Seasonal';
 }
 
 export interface Feature {
