@@ -1,7 +1,0 @@
-{
-  "name": "Signature Security Specialist Platform",
-  "description": "A comprehensive, technology-driven security workforce management platform to connect qualified security professionals with clients. It handles scheduling, payroll, client communication, and guard management in one unified system.",
-  "requestFramePermissions": [
-    "camera"
-  ]
-}
